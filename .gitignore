@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Secrets and enviroment
+.env
+*.pem
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+
+# Local data
+data/
