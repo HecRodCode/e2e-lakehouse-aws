@@ -17,6 +17,7 @@ __pycache__/
 crash.log
 tfplan
 *.tfplan
+backend.hcl
 
 # Local data
 data/
