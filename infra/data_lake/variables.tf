@@ -5,9 +5,9 @@ variable "region" {
 }
 
 variable "layers" {
-  description = "Capas medallion: una base de Glue por capa"
+  description = "Zonas de lakehouse: una base de Glue por capa"
   type        = set(string)
-  default     = ["bronze", "silver", "gold"]
+  default     = ["landing", "bronze", "silver", "gold"]
 }
 
 variable "athena_scan_limit_bytes" {
