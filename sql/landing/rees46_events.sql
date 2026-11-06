@@ -11,11 +11,12 @@ CREATE EXTERNAL TABLE landing.rees46_events (
 )
 PARTITIONED BY (event_date string)
 STORED AS PARQUET
-LOCATION 's3:/lakehouse-datalake-106948907720/landing/rees46/'
+-- Replace your-datalake-bucket with the bucket created by your Terraform setup.
+LOCATION 's3://your-datalake-bucket/landing/rees46/'
 TBLPROPERTIES (
   'projection.enabled'            = 'true',
   'projection.event_date.type'    = 'date',
   'projection.event_date.range'   = '2019-10-01,2019-10-31',
   'projection.event_date.format'  = 'yyyy-MM-dd',
-  'storage.location.template'     = 's3://lakehouse-datalake-106948907720/landing/rees46/event_date=${event_date}'
+  'storage.location.template'     = 's3://your-datalake-bucket/landing/rees46/event_date=${event_date}'
 );
