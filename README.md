@@ -20,14 +20,14 @@ Bronze (Iceberg, datos de origen y auditoría)
 Silver (Iceberg, limpieza, deduplicación y cuarentena)
     |
     v
-Gold (pendiente: modelos analíticos)
+Gold (Iceberg, fact_ventas; siguientes modelos pendientes)
 ```
 
 Landing conserva los datos de origen en Parquet particionado por fecha.
 Bronze los registra en Iceberg con metadatos de ingesta. Silver aplica las
 reglas de calidad descritas en el
-[ADR de limpieza](docs/decisions/001-reglas-de-limpieza.md). Gold será la capa
-de modelos de negocio.
+[ADR de limpieza](docs/decisions/001-reglas-de-limpieza.md). Gold contiene el
+primer modelo de negocio `fact_ventas`; se añadirán más modelos después.
 
 Actualmente Spark se ejecuta localmente y utiliza AWS para acceder a S3 y Glue.
 El código de VPC y EC2 es una extensión futura para experimentar con cómputo
@@ -118,6 +118,53 @@ make test
 `make` es un ejecutor de comandos: guarda atajos para las tareas repetidas.
 Los targets disponibles (`test` y `sql-lint`) solo ejecutan validaciones
 locales; no crean ni destruyen infraestructura.
+
+## Modelo Gold con dbt
+
+El proyecto dbt está en `dbt_project/`. El primer modelo,
+`gold.fact_ventas`, tiene una fila por evento `purchase` válido de Silver.
+`price` conserva el valor asociado al evento; no debe interpretarse ni
+sumarse como ingreso realizado, porque el dataset no proporciona cantidad ni
+un identificador de orden.
+
+Prepara las variables de entorno usando los outputs de Terraform:
+
+```bash
+export DATALAKE_BUCKET="$(terraform -chdir=infra/data_lake output -raw datalake_bucket)"
+export ATHENA_RESULTS_BUCKET="$(terraform -chdir=infra/data_lake output -raw athena_results_bucket)"
+export DBT_ATHENA_DATA_DIR="s3://${DATALAKE_BUCKET}/gold/dbt/"
+export DBT_ATHENA_STAGING_DIR="s3://${ATHENA_RESULTS_BUCKET}/results/"
+export ATHENA_WORKGROUP=lakehouse
+cp dbt_project/profiles.yml.example dbt_project/profiles.yml
+```
+
+`profiles.yml` es local e ignorado por Git; las credenciales se obtienen del
+perfil de AWS indicado por `AWS_PROFILE`. El workgroup de Athena debe usar
+Athena engine v3 para tablas Iceberg.
+
+Primero valida el proyecto sin conectarte a Athena:
+
+```bash
+uv run dbt parse --project-dir dbt_project --profiles-dir dbt_project
+uv run dbt compile --no-populate-cache --no-introspect \
+  --project-dir dbt_project --profiles-dir dbt_project
+```
+
+La configuración del adaptador está documentada en
+[dbt-athena](https://docs.getdbt.com/docs/core/connect-data-platform/athena-setup)
+y las opciones Iceberg en
+[Athena configurations](https://docs.getdbt.com/reference/resource-configs/athena-configs).
+
+La creación de `gold.fact_ventas` y sus pruebas sí escribe en AWS y genera
+consultas facturables. Solo después de revisar perfil, región, workgroup,
+rutas S3 y bytes escaneados, ejecuta:
+
+```bash
+uv run dbt build --project-dir dbt_project --profiles-dir dbt_project --select fact_ventas
+```
+
+Las consultas para comparar el modelo con Silver están en
+[`sql/verification/gold_fact_ventas.sql`](sql/verification/gold_fact_ventas.sql).
 
 ## Infraestructura
 
