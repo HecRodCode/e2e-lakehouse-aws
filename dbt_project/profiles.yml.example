@@ -1,0 +1,15 @@
+lakehouse_aws:
+  target: dev
+  outputs:
+    dev:
+      type: athena
+      s3_staging_dir: "{{ env_var('DBT_ATHENA_STAGING_DIR') }}"
+      s3_data_dir: "{{ env_var('DBT_ATHENA_DATA_DIR') }}"
+      s3_data_naming: schema_table_unique
+      region_name: "{{ env_var('AWS_REGION', 'us-east-2') }}"
+      database: awsdatacatalog
+      schema: gold
+      aws_profile_name: "{{ env_var('AWS_PROFILE', 'default') }}"
+      work_group: "{{ env_var('ATHENA_WORKGROUP', 'lakehouse') }}"
+      threads: 2
+      num_retries: 3

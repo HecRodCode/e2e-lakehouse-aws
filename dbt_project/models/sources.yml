@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: lakehouse
+    database: awsdatacatalog
+    schema: silver
+    tables:
+      - name: rees46_events
