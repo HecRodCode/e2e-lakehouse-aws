@@ -11,7 +11,7 @@ no una dependencia del trabajo actual.
 ```text
 CSV -> landing (Parquet en S3) -> Bronze (Iceberg) -> Silver (Iceberg)
                                                      -> cuarentena
-                                                     -> Gold (fact_ventas)
+                                                     -> Gold (fact_ventas, dim_producto, dim_fecha)
 ```
 
 - **Landing:** archivo de octubre de 2019 en Parquet, particionado por día.
@@ -20,11 +20,16 @@ CSV -> landing (Parquet en S3) -> Bronze (Iceberg) -> Silver (Iceberg)
   reemplaza algunos nulos por `unknown` y elimina duplicados exactos.
 - **Cuarentena:** separa registros con sesión nula o compras sin precio
   válido.
-- **Gold:** `gold.fact_ventas` creado como tabla Iceberg con dbt-athena.
-  Contiene 742.773 eventos `purchase`; las 11 pruebas dbt pasan.
+- **Gold:** `gold.fact_ventas` contiene 742.773 eventos `purchase`;
+  `gold.dim_producto` contiene 166.794 productos y `gold.dim_fecha` cubre 31
+  días calendario. El último `dbt build` reconstruyó las tres tablas y pasó
+  las 19 pruebas, incluidas las relaciones del hecho con ambas dimensiones.
 
 Las reglas de transformación están descritas en el
 [ADR 001](decisions/001-reglas-de-limpieza.md).
+El esquema Gold está en el README. Los resultados de las primeras consultas
+de BI y sus limitaciones están en
+[hallazgos analíticos](analytics-findings.md).
 
 ## Resultados compartidos de Athena
 
@@ -43,6 +48,8 @@ datos.
 | Filas removidas al comparar Bronze con Silver | 30.222 |
 | Duplicados exactos sobrantes eliminados | 30.220 |
 | Filas en `gold.fact_ventas` | 742.773 |
+| Filas en `gold.dim_producto` | 166.794 |
+| Filas en `gold.dim_fecha` | 31 |
 
 La diferencia total se explica por 30.220 duplicados eliminados y dos filas
 en cuarentena. Los archivos SQL organizan las comprobaciones por propósito en
@@ -50,20 +57,32 @@ en cuarentena. Los archivos SQL organizan las comprobaciones por propósito en
 
 ## Siguientes pasos recomendados
 
-1. Repetir las validaciones de Bronze y Silver después de cualquier
-   reproceso, y guardar el resultado de Athena fuera de este README.
-2. Confirmar que el flujo Spark puede correrse localmente desde un entorno
-   limpio con la configuración de AWS proporcionada por cada desarrollador.
-3. Diseñar el siguiente modelo Gold —por ejemplo, una dimensión de productos
-   o una agregación de ventas— validando primero las reglas y granularidad con
-   las columnas disponibles en Silver.
-4. Considerar orquestación y cómputo en EC2 solo cuando el flujo local
-   Bronze → Silver → Gold esté claro y exista una necesidad concreta.
+1. Revisar y corregir las advertencias de Ruff, sin mezclar ese trabajo con
+   los cambios de reproducibilidad.
+2. Formular nuevas preguntas de negocio y revisar si requieren atributos o
+   granularidad que aún no ofrece el modelo Gold.
+3. Repetir Bronze → Silver en AWS solo cuando se quiera validar ese flujo
+   contra la infraestructura desplegada. Esos jobs escriben datos y no forman
+   parte de las comprobaciones locales automatizadas.
+4. Considerar orquestación y cómputo en EC2 solo cuando el flujo local esté
+   claro y exista una necesidad concreta.
+
+## Reproducibilidad local
+
+Se comprobó la instalación bloqueada de dependencias con Python 3.11 en un
+entorno virtual limpio. Las pruebas locales pasan (7 pruebas, incluida la
+conversión de un CSV pequeño a Parquet particionado); también pasaron SQLFluff
+para las consultas de Athena, `dbt parse` y `dbt compile` sin conexión a AWS,
+así como las validaciones existentes de Terraform, formato y sintaxis.
+
+Esto valida la instalación y componentes ejecutables localmente, pero no es
+una repetición integral del flujo con AWS: Landing, Bronze y Silver requieren
+recursos de S3/Glue y los jobs de Bronze y Silver escriben en esas tablas. No
+se ejecutaron esos jobs durante la validación. Los pasos de conversión,
+carga de Landing y advertencias para operaciones que modifican AWS están en
+la sección de ejecución del README.
 
 ## Pendientes técnicos conocidos
 
-- Revisar advertencias existentes de Ruff.
 - Mantener fuera del repositorio credenciales, estado de Terraform y datos
   fuente.
-- Revisar los CIDR del módulo de clúster antes de considerar cualquier
-  despliegue. Ese módulo no es necesario para la etapa actual.
