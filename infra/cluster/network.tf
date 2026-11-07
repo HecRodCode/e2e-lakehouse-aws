@@ -1,4 +1,7 @@
-# --- VPC propia del clúster (todo esto es gratis; solo las EC2 cuestan) -------
+# --- VPC propia del clúster ---------------------------------------------------
+# VPC, subred, rutas, internet gateway y endpoint gateway de S3 no tienen cargo
+# horario; la EC2, el volumen EBS, la IPv4 publica y la transferencia de datos
+# si pueden generar costos.
 resource "aws_vpc" "this" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true

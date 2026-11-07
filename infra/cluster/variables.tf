@@ -13,11 +13,29 @@ variable "availability_zone" {
 variable "vpc_cidr" {
   description = "Rango de direcciones de la VPC"
   type        = string
-  default     = "24.0.0.0/16"
+  default     = "10.20.0.0/16"
 }
 
 variable "subnet_cidr" {
   description = "Rango de la subred publica"
   type        = string
-  default     = "24.0.1.0/24"
+  default     = "10.20.1.0/24"
+}
+
+variable "instance_type" {
+  description = "Tipo de instancia de la maquina"
+  type        = string
+  default     = "m7i-flex.large"
+}
+
+variable "disk_gb" {
+  description = "Tamano del disco raiz en GB"
+  type        = number
+  default     = 30
+}
+
+variable "instance_profile_name" {
+  description = "Instance profile creado en el modulo data_lake"
+  type        = string
+  default     = "lakehouse-etl-writer"
 }

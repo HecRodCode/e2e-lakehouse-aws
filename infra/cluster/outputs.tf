@@ -9,3 +9,7 @@ output "subnet_id" {
 output "security_group_id" {
   value = aws_security_group.cluster.id
 }
+
+output "instance_id" {
+  value = aws_instance.node.id
+}
