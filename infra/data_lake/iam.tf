@@ -54,6 +54,12 @@ data "aws_iam_policy_document" "etl_writer_data" {
   }
 
   statement {
+    sid       = "LeerArtefactos"
+    actions   = ["s3:GetObject"]
+    resources = ["${local.iam_bucket_arn}/artifacts/*"]
+  }
+
+  statement {
     sid = "LeerYEscribirCapas"
     actions = [
       "s3:GetObject",
