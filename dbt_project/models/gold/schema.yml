@@ -14,6 +14,10 @@ models:
       - name: event_date
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_fecha')
+                field: date_day
       - name: event_time
         data_tests:
           - not_null
@@ -25,6 +29,10 @@ models:
       - name: product_id
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_producto')
+                field: product_id
       - name: user_id
         data_tests:
           - not_null
@@ -34,3 +42,45 @@ models:
       - name: price
         data_tests:
           - not_null
+
+  - name: dim_producto
+    description: >
+      Una fila por producto observado en Silver. Sus atributos corresponden
+      al evento más reciente del producto; los cambios históricos no se
+      conservan (SCD tipo 1).
+    columns:
+      - name: product_id
+        description: Clave natural del producto en el dataset.
+        data_tests:
+          - not_null
+          - unique
+      - name: category_id
+        description: Identificador de categoría observado en el evento más reciente.
+      - name: category_code
+        description: Código jerárquico de categoría observado más recientemente.
+      - name: brand
+        description: Marca observada en el evento más reciente.
+
+  - name: dim_fecha
+    description: >
+      Calendario continuo entre la primera y última fecha con compras en Silver.
+      Incluye días sin compras para facilitar análisis por calendario.
+    columns:
+      - name: date_key
+        description: Clave numérica YYYYMMDD.
+        data_tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: Fecha calendario que relaciona con fact_ventas.event_date.
+        data_tests:
+          - not_null
+          - unique
+      - name: year
+      - name: quarter
+      - name: month
+      - name: day_of_month
+      - name: day_of_week
+      - name: day_name
+      - name: month_name
+      - name: is_weekend
